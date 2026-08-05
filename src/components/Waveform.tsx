@@ -22,7 +22,7 @@ export function Waveform({
   return (
     <div className={`flex h-full w-full items-end gap-[2px] ${className}`} aria-hidden="true">
       {Array.from({ length: bars }).map((_, i) => {
-        const base = 0.22 + rand(i, seed) * 0.78;
+        const base = Number((0.22 + rand(i, seed) * 0.78).toFixed(3));
         const duration = 420 + Math.round(rand(i, seed + 5) * 340);
         return (
           <span
@@ -31,7 +31,7 @@ export function Waveform({
             style={{
               height: "100%",
               transformOrigin: "bottom",
-              transform: `scaleY(${playing ? 1 : base * 0.6})`,
+              transform: `scaleY(${playing ? 1 : Number((base * 0.6).toFixed(3))})`,
               transition: playing ? undefined : "transform 220ms cubic-bezier(0.22,1,0.36,1)",
               animation: playing
                 ? `bar-bounce ${duration}ms ${duration / 3}ms ease-in-out infinite alternate`
