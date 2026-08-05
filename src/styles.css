@@ -235,3 +235,54 @@
     transform: none !important;
   }
 }
+
+/* ---------- Range controls (seek + volume) ---------- */
+
+.studio-range {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.studio-range::-webkit-slider-runnable-track {
+  height: 10px;
+  background: var(--white);
+  border: 2px solid var(--ink);
+}
+
+.studio-range::-moz-range-track {
+  height: 10px;
+  background: var(--white);
+  border: 2px solid var(--ink);
+}
+
+.studio-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 22px;
+  margin-top: -8px;
+  background: var(--bubblegum);
+  border: 2px solid var(--ink);
+  border-radius: 2px;
+}
+
+.studio-range::-moz-range-thumb {
+  width: 16px;
+  height: 22px;
+  background: var(--bubblegum);
+  border: 2px solid var(--ink);
+  border-radius: 2px;
+}
+
+/* Hide number spinners on the line counters */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
