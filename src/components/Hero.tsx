@@ -14,7 +14,7 @@ export function Hero() {
           </p>
 
           <h1
-            className="enter font-display mt-5 leading-[0.82] font-extrabold tracking-[-0.01em]"
+            className="enter font-display mt-5 leading-[0.95] font-extrabold tracking-[-0.01em]"
             style={{ fontSize: "clamp(4.5rem, 10vw, 9rem)", animationDelay: "140ms" }}
           >
             <span className="inline-block" style={{ transform: "translateY(0.06em)" }}>
@@ -25,7 +25,7 @@ export function Hero() {
               style={{ transform: "translateY(-0.05em) rotate(-3deg)", marginInline: "0.02em" }}
             >
               <span
-                className="outline-ink absolute inset-x-0 bottom-[0.12em] -z-10 h-[0.42em]"
+                className="outline-ink absolute inset-x-0 bottom-[0.02em] -z-10 h-[0.3em]"
                 style={{ background: "var(--bubblegum)" }}
                 aria-hidden="true"
               />
