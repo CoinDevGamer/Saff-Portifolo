@@ -14,7 +14,7 @@ export function Hero() {
           </p>
 
           <h1
-            className="enter font-display mt-5 leading-[0.82] font-extrabold tracking-[-0.04em]"
+            className="enter font-display mt-5 leading-[0.82] font-extrabold tracking-[-0.01em]"
             style={{ fontSize: "clamp(4.5rem, 10vw, 9rem)", animationDelay: "140ms" }}
           >
             <span className="inline-block" style={{ transform: "translateY(0.06em)" }}>
@@ -22,7 +22,7 @@ export function Hero() {
             </span>
             <span
               className="relative inline-block px-1"
-              style={{ transform: "translateY(-0.05em) rotate(-3deg)" }}
+              style={{ transform: "translateY(-0.05em) rotate(-3deg)", marginInline: "0.02em" }}
             >
               <span
                 className="outline-ink absolute inset-x-0 bottom-[0.12em] -z-10 h-[0.42em]"
