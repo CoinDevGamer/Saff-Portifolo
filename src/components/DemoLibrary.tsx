@@ -68,7 +68,7 @@ export function DemoLibrary() {
             trackNumber={voiceDemos.indexOf(demo) + 1}
             active={activeId === demo.id}
             onActivate={setActiveId}
-            accent={accents[i % accents.length]}
+            accent={accents[i % accents.length]!}
             seed={i + 2}
           />
         ))}

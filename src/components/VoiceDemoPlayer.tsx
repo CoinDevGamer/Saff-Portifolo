@@ -19,6 +19,7 @@ type Props = {
   onActivate?: (id: string) => void;
   accent?: string;
   seed?: number;
+  playButtonId?: string;
 };
 
 function VoiceDemoPlayerBase({
@@ -29,6 +30,7 @@ function VoiceDemoPlayerBase({
   onActivate,
   accent = "var(--butter)",
   seed = 1,
+  playButtonId,
 }: Props) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -119,6 +121,7 @@ function VoiceDemoPlayerBase({
         <div className="mt-4 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-4">
           <button
             type="button"
+            id={playButtonId}
             onClick={toggle}
             aria-label={playLabel}
             aria-pressed={playing}
