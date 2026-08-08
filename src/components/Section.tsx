@@ -8,7 +8,11 @@ type Props = {
   children: ReactNode;
 };
 
-/** Section wrapper: coloured band, bold divider, one-time scroll reveal. */
+/**
+ * Section wrapper: coloured band, bold divider, one-time entrance.
+ * The entrance itself is expressed by the children through the `sig-*`
+ * classes, which resolve once `data-shown` flips to true.
+ */
 export function Section({ id, background = "var(--paper)", className = "", children }: Props) {
   const { ref, shown } = useReveal<HTMLElement>();
 
@@ -16,7 +20,8 @@ export function Section({ id, background = "var(--paper)", className = "", child
     <section
       id={id}
       ref={ref}
-      className={`reveal ${shown ? "reveal-in" : ""} border-b-2 border-ink ${className}`}
+      data-shown={shown ? "true" : "false"}
+      className={`border-b-2 border-ink ${className}`}
       style={{ background }}
     >
       <div className="mx-auto max-w-[1280px] px-4 py-14 sm:px-6 sm:py-20">{children}</div>
