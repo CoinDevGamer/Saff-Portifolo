@@ -1,21 +1,21 @@
-export function PlayIcon({ className = "" }: { className?: string }) {
+export function PlayIcon({ className = "", style }: { className?: string; style?: React.CSSProperties }) {
   return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden="true" fill="currentColor">
+    <svg viewBox="0 0 24 24" className={className} style={style} aria-hidden="true" fill="currentColor">
       <path d="M8 5.5v13l11-6.5-11-6.5Z" />
     </svg>
   );
 }
 
-export function PauseIcon({ className = "" }: { className?: string }) {
+export function PauseIcon({ className = "", style }: { className?: string; style?: React.CSSProperties }) {
   return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden="true" fill="currentColor">
+    <svg viewBox="0 0 24 24" className={className} style={style} aria-hidden="true" fill="currentColor">
       <rect x="7" y="5" width="3.6" height="14" rx="0.5" />
       <rect x="13.4" y="5" width="3.6" height="14" rx="0.5" />
     </svg>
   );
 }
 
-export function DownloadIcon({ className = "" }: { className?: string }) {
+export function DownloadIcon({ className = "", style }: { className?: string; style?: React.CSSProperties }) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -34,7 +34,7 @@ export function DownloadIcon({ className = "" }: { className?: string }) {
   );
 }
 
-export function VolumeIcon({ className = "" }: { className?: string }) {
+export function VolumeIcon({ className = "", style }: { className?: string; style?: React.CSSProperties }) {
   return (
     <svg
       viewBox="0 0 24 24"
