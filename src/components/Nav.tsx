@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const links = [
   { href: "#demos", label: "Demos" },
@@ -9,13 +9,39 @@ const links = [
 export function Nav() {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState("#demos");
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const itemRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
+  const [marker, setMarker] = useState<{ x: number; w: number } | null>(null);
+
+  const measure = useCallback(() => {
+    const list = listRef.current;
+    const el = itemRefs.current[active];
+    if (!list || !el) return;
+    const a = el.getBoundingClientRect();
+    const b = list.getBoundingClientRect();
+    setMarker({ x: a.left - b.left + 8, w: a.width - 16 });
+  }, [active]);
+
+  useEffect(() => {
+    measure();
+    window.addEventListener("resize", measure);
+    // fonts landing can change label widths
+    const t = window.setTimeout(measure, 400);
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.clearTimeout(t);
+    };
+  }, [measure]);
 
   useEffect(() => {
     const ids = ["demos", "about", "pricing", "quote"];
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          if (entry.isIntersecting) setActive(`#${entry.target.id}`);
+          if (entry.isIntersecting) {
+            const id = entry.target.id === "quote" ? "pricing" : entry.target.id;
+            setActive(`#${id}`);
+          }
         }
       },
       { rootMargin: "-45% 0px -50% 0px" },
@@ -28,12 +54,12 @@ export function Nav() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 border-b-2 border-ink bg-paper">
+    <header className="seq-nav sticky top-0 z-50 border-b-2 border-ink bg-paper" style={{ "--d": "40ms" } as React.CSSProperties}>
       <nav
         aria-label="Main"
         className="mx-auto grid max-w-[1280px] grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-4 py-2.5 sm:px-6"
       >
-        <a href="#top" className="enter flex min-w-0 items-baseline gap-2" style={{ animationDelay: "0ms" }}>
+        <a href="#top" className="flex min-w-0 items-baseline gap-2">
           <span className="font-display text-2xl leading-none font-extrabold tracking-tight">
             saff
           </span>
@@ -47,36 +73,42 @@ export function Nav() {
           <span className="sr-only">Saff, voice actor. Home</span>
           <span className="ml-2 hidden items-center gap-1.5 sm:flex">
             <span
-              className="outline-ink block h-2.5 w-2.5 rounded-full"
-              style={{ background: "#d94f5c" }}
+              className="seq-live outline-ink block h-2.5 w-2.5 rounded-full"
+              style={{ background: "#d94f5c", "--d": "300ms" } as React.CSSProperties}
               aria-hidden="true"
             />
             <span className="label-strip text-ink/70">Live</span>
           </span>
         </a>
 
-        <div className="hidden items-center gap-1 md:flex">
+        <div ref={listRef} className="relative hidden items-center gap-1 md:flex">
+          {/* one shared signal indicator that slides and resizes */}
+          <span
+            aria-hidden="true"
+            className="nav-indicator pointer-events-none absolute bottom-1.5 left-0 h-[6px] border-2 border-ink"
+            style={{
+              background: "var(--periwinkle)",
+              width: marker ? `${marker.w}px` : 0,
+              transform: `translateX(${marker?.x ?? 0}px)`,
+              opacity: marker ? 1 : 0,
+            }}
+          />
           {links.map((link) => (
             <a
               key={link.href}
               href={link.href}
+              ref={(el) => {
+                itemRefs.current[link.href] = el;
+              }}
               aria-current={active === link.href ? "true" : undefined}
               className="label-strip relative inline-flex min-h-11 items-center px-3"
             >
               {link.label}
-              <span
-                className="absolute right-2 bottom-1.5 left-2 h-[6px]"
-                style={{
-                  background: active === link.href ? "var(--periwinkle)" : "transparent",
-                  border: active === link.href ? "2px solid var(--ink)" : "2px solid transparent",
-                  transition: "background-color 160ms var(--ease-studio)",
-                }}
-              />
             </a>
           ))}
           <a
             href="#quote"
-            className="studio-control label-strip ml-2 inline-flex min-h-11 items-center px-4"
+            className="studio-control control-chip label-strip ml-2 inline-flex min-h-11 items-center px-4"
             style={{ background: "var(--butter)" }}
           >
             Build a quote
@@ -85,7 +117,7 @@ export function Nav() {
 
         <button
           type="button"
-          className="studio-control label-strip min-h-11 bg-white px-3 md:hidden"
+          className="studio-control control-chip label-strip min-h-11 bg-white px-3 md:hidden"
           aria-expanded={open}
           aria-controls="mobile-menu"
           onClick={() => setOpen((o) => !o)}

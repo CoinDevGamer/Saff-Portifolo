@@ -43,7 +43,7 @@
   --font-sans: "DM Sans", system-ui, sans-serif;
   --font-hand: "Caveat", cursive;
 
-  --ease-studio: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-studio: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 :root {
@@ -76,6 +76,20 @@
   --border: var(--ink);
   --input: var(--ink);
   --ring: var(--ink);
+
+  /* ---------- Motion tokens ---------- */
+  --ease-signal: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-tactile: cubic-bezier(0.34, 1.35, 0.64, 1);
+  --ease-switch: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --motion-press: 90ms;
+  --motion-fast: 160ms;
+  --motion-ui: 240ms;
+  --motion-reveal: 440ms;
+  --motion-feature: 620ms;
+
+  /* legacy alias so older rules keep working */
+  --ease-studio: var(--ease-signal);
 }
 
 @layer base {
@@ -119,27 +133,72 @@
   box-shadow: 8px 8px 0 var(--ink);
 }
 
-/* Tactile studio control: outline + offset shadow + press physics */
+/*
+ * Tactile studio control.
+ * Per-control character is tuned with --sc-rest / --sc-hover / --sc-press
+ * (shadow distances), --sc-lift and --sc-scale so no two families of
+ * controls feel cloned.
+ */
 @utility studio-control {
+  --sc-rest: 4px;
+  --sc-hover: 6px;
+  --sc-press: 2px;
+  --sc-lift: 2px;
+  --sc-scale: 0.98;
+
   position: relative;
   border: 2px solid var(--ink);
   border-radius: 6px;
-  box-shadow: 4px 4px 0 var(--ink);
+  box-shadow: var(--sc-rest) var(--sc-rest) 0 var(--ink);
   transition:
-    transform 160ms var(--ease-studio),
-    box-shadow 160ms var(--ease-studio),
-    background-color 160ms var(--ease-studio);
+    transform var(--motion-ui) var(--ease-tactile),
+    box-shadow var(--motion-fast) var(--ease-signal),
+    filter var(--motion-fast) var(--ease-signal),
+    background-color var(--motion-fast) var(--ease-signal);
 
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 6px 6px 0 var(--ink);
+  &:hover:not(:disabled):not([data-inert="true"]) {
+    transform: translateY(calc(var(--sc-lift) * -1));
+    box-shadow: var(--sc-hover) var(--sc-hover) 0 var(--ink);
+    /* pastel face shifts slightly, no gradient */
+    filter: saturate(1.12) brightness(1.03);
   }
 
-  &:active {
-    transform: translate(2px, 2px) scale(0.97);
-    box-shadow: 2px 2px 0 var(--ink);
-    transition-duration: 90ms;
+  &:active:not(:disabled):not([data-inert="true"]) {
+    transform: translate(var(--sc-press), var(--sc-press)) scale(var(--sc-scale));
+    box-shadow: var(--sc-press) var(--sc-press) 0 var(--ink);
+    transition-duration: var(--motion-press);
+    transition-timing-function: var(--ease-switch);
   }
+
+  &:disabled,
+  &[data-inert="true"] {
+    box-shadow: var(--sc-press) var(--sc-press) 0 var(--ink);
+  }
+}
+
+/* control personalities */
+@utility control-key {
+  --sc-rest: 3px;
+  --sc-hover: 5px;
+  --sc-press: 1px;
+  --sc-lift: 2px;
+  --sc-scale: 0.94;
+}
+
+@utility control-transport {
+  --sc-rest: 6px;
+  --sc-hover: 9px;
+  --sc-press: 2px;
+  --sc-lift: 3px;
+  --sc-scale: 0.97;
+}
+
+@utility control-chip {
+  --sc-rest: 3px;
+  --sc-hover: 4px;
+  --sc-press: 1px;
+  --sc-lift: 1px;
+  --sc-scale: 0.985;
 }
 
 @utility label-strip {
@@ -155,12 +214,14 @@
   font-weight: 600;
 }
 
-/* ---------- Motion ---------- */
+/* ============================================================
+   HERO — "studio going live" opening sequence (runs once)
+   ============================================================ */
 
-@keyframes studio-enter {
+@keyframes settle-down {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(-14px);
   }
   to {
     opacity: 1;
@@ -168,48 +229,305 @@
   }
 }
 
-@utility enter {
-  opacity: 0;
-  animation: studio-enter 380ms var(--ease-studio) forwards;
-}
-
-@keyframes bar-bounce {
-  from {
-    transform: scaleY(0.18);
-  }
-  to {
-    transform: scaleY(1);
-  }
-}
-
-@utility reveal {
-  opacity: 0;
-  transform: translateY(18px);
-  transition:
-    opacity 420ms var(--ease-studio),
-    transform 420ms var(--ease-studio);
-}
-
-@utility reveal-in {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-@keyframes pop-count {
+@keyframes channel-lock {
   0% {
-    transform: scale(1);
-  }
-  40% {
-    transform: scale(1.12);
+    opacity: 0;
+    transform: translateY(var(--lock-from, 18px));
   }
   100% {
+    opacity: 1;
+    transform: translateY(var(--ty, 0em));
+  }
+}
+
+@keyframes signal-on {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(1.18);
+  }
+  50% {
+    transform: scale(1);
+  }
+  70% {
+    transform: scale(1.14);
+  }
+  100% {
+    opacity: 1;
     transform: scale(1);
   }
 }
 
-@keyframes total-in {
+@keyframes copy-resolve {
   from {
-    opacity: 0.65;
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes console-slide {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes shadow-land {
+  from {
+    box-shadow: 0 0 0 var(--ink);
+  }
+  to {
+    box-shadow: 5px 5px 0 var(--ink);
+  }
+}
+
+@keyframes wave-draw {
+  from {
+    stroke-dashoffset: var(--dash, 900);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* sequence primitives: every element sets --d (delay) */
+@utility seq {
+  opacity: 0;
+  animation: copy-resolve var(--motion-reveal) var(--ease-signal) var(--d, 0ms) forwards;
+}
+
+@utility seq-nav {
+  opacity: 0;
+  animation: settle-down 380ms var(--ease-signal) var(--d, 0ms) forwards;
+}
+
+@utility seq-live {
+  opacity: 0;
+  animation: signal-on 420ms var(--ease-switch) var(--d, 260ms) forwards;
+}
+
+@utility seq-letter {
+  opacity: 0;
+  animation: channel-lock 420ms var(--ease-signal) var(--d, 0ms) forwards;
+}
+
+@utility seq-console {
+  opacity: 0;
+  animation: console-slide 460ms var(--ease-signal) var(--d, 0ms) forwards;
+}
+
+/* wordmark hover: a voice signal passing through the name */
+.wordmark .wm-letter {
+  display: inline-block;
+  transform: translateY(var(--ty, 0em));
+  transition: transform var(--motion-ui) var(--ease-signal);
+}
+
+.wordmark .wm-wave {
+  transform-origin: left center;
+  transition: transform var(--motion-ui) var(--ease-signal);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .wordmark:hover .wm-letter {
+    transform: translateY(calc(var(--ty, 0em) + var(--hover, 0px)));
+  }
+  .wordmark:hover .wm-wave {
+    transform: scaleY(1.6);
+  }
+}
+
+/* ============================================================
+   NAVIGATION — one shared signal indicator
+   ============================================================ */
+
+.nav-indicator {
+  transition:
+    transform 260ms var(--ease-signal),
+    width 260ms var(--ease-signal),
+    opacity var(--motion-fast) var(--ease-signal);
+}
+
+/* ============================================================
+   WAVEFORM — deterministic travelling signal
+   ============================================================ */
+
+@keyframes bar-signal {
+  from {
+    transform: scaleY(var(--lo, 0.2));
+  }
+  to {
+    transform: scaleY(var(--hi, 1));
+  }
+}
+
+.wf {
+  transform-origin: left center;
+  transition: transform 320ms var(--ease-signal);
+}
+
+.wf[data-unfurl="false"] {
+  transform: scaleX(0.02);
+}
+
+.wf-bar {
+  transform-origin: center;
+  transform: scaleY(var(--rest, 0.3));
+  transition: transform var(--motion-ui) var(--ease-signal);
+}
+
+.wf[data-playing="true"] .wf-bar {
+  animation: bar-signal var(--dur, 560ms) var(--delay, 0ms) ease-in-out infinite alternate;
+}
+
+.wf[data-paused="true"] .wf-bar {
+  animation-play-state: paused;
+}
+
+/* a thin signal line travelling from the transport to the waveform */
+@keyframes signal-travel {
+  0% {
+    transform: scaleX(0);
+    opacity: 1;
+  }
+  70% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+}
+
+@utility signal-line {
+  transform-origin: left center;
+  animation: signal-travel 420ms var(--ease-switch) forwards;
+}
+
+/* ============================================================
+   DEMO TRACKS
+   ============================================================ */
+
+@keyframes stamp-in {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@utility stamp {
+  animation: stamp-in var(--motion-ui) var(--ease-signal) both;
+}
+
+@keyframes results-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes results-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes results-out-left {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+}
+
+@keyframes results-out-right {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(6px);
+  }
+}
+
+.results[data-phase="out-left"] {
+  animation: results-out-left 100ms var(--ease-switch) forwards;
+}
+.results[data-phase="out-right"] {
+  animation: results-out-right 100ms var(--ease-switch) forwards;
+}
+.results[data-phase="in-left"] {
+  animation: results-in-left var(--motion-fast) var(--ease-signal) both;
+}
+.results[data-phase="in-right"] {
+  animation: results-in-right var(--motion-fast) var(--ease-signal) both;
+}
+
+/* ============================================================
+   CALCULATOR — counter reels and printed receipt
+   ============================================================ */
+
+@keyframes reel-up {
+  0% {
+    opacity: 0.4;
+    transform: translateY(70%);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes reel-down {
+  0% {
+    opacity: 0.4;
+    transform: translateY(-70%);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.reel[data-dir="up"] {
+  animation: reel-up var(--motion-ui) var(--ease-signal);
+}
+.reel[data-dir="down"] {
+  animation: reel-down var(--motion-ui) var(--ease-signal);
+}
+
+@keyframes receipt-line {
+  from {
+    opacity: 0.55;
     transform: translateY(5px);
   }
   to {
@@ -217,6 +535,101 @@
     transform: translateY(0);
   }
 }
+
+@utility receipt-value {
+  animation: receipt-line var(--motion-ui) var(--ease-signal);
+}
+
+@keyframes receipt-print {
+  0% {
+    opacity: 0.55;
+    transform: translateY(7px);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-1px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility receipt-total {
+  animation: receipt-print 300ms var(--ease-signal);
+}
+
+/* ============================================================
+   SECTION ENTRANCES — one purposeful move per section
+   ============================================================ */
+
+.sig {
+  opacity: 0;
+  transition:
+    opacity var(--motion-reveal) var(--ease-signal),
+    transform var(--motion-reveal) var(--ease-signal);
+}
+.sig-up {
+  transform: translateY(14px);
+}
+.sig-left {
+  transform: translateX(-16px);
+}
+.sig-right {
+  transform: translateX(16px);
+}
+.sig-strip {
+  transform: translateX(-12px);
+}
+.sig-console-a {
+  transform: translateX(-14px) translateY(8px);
+}
+.sig-console-b {
+  transform: translateX(14px) translateY(8px);
+}
+.sig-credit {
+  transform: translateY(10px);
+}
+
+[data-shown="true"] .sig {
+  opacity: 1;
+  transform: none;
+}
+
+/* payment lines register one after another, briefly */
+[data-shown="true"] .sig-credit:nth-child(2) {
+  transition-delay: 90ms;
+}
+
+/* channel strips lock into place with a very short cascade */
+[data-shown="true"] .sig-strip:nth-child(1) {
+  transition-delay: 0ms;
+}
+[data-shown="true"] .sig-strip:nth-child(2) {
+  transition-delay: 60ms;
+}
+[data-shown="true"] .sig-strip:nth-child(3) {
+  transition-delay: 120ms;
+}
+
+/* microphone cable draws once */
+.sig-cable {
+  stroke-dasharray: var(--dash, 600);
+  stroke-dashoffset: var(--dash, 600);
+  transition: stroke-dashoffset var(--motion-feature) var(--ease-signal) 120ms;
+}
+[data-shown="true"] .sig-cable {
+  stroke-dashoffset: 0;
+}
+.sig-plug {
+  opacity: 0;
+  transition: opacity var(--motion-fast) var(--ease-signal) var(--motion-feature);
+}
+[data-shown="true"] .sig-plug {
+  opacity: 1;
+}
+
+/* ---------- Reduced motion: states apply instantly ---------- */
 
 @media (prefers-reduced-motion: reduce) {
   html {
@@ -227,12 +640,36 @@
   *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
     transition-duration: 0.001ms !important;
+    transition-delay: 0ms !important;
   }
-  .enter,
-  .reveal {
+  .seq,
+  .seq-nav,
+  .seq-live,
+  .seq-letter,
+  .seq-console,
+  .sig {
     opacity: 1 !important;
     transform: none !important;
+  }
+  .wordmark:hover .wm-letter,
+  .wordmark:hover .wm-wave {
+    transform: translateY(var(--ty, 0em));
+  }
+  .wf,
+  .wf[data-unfurl="false"] {
+    transform: none !important;
+  }
+  .wf-bar {
+    animation: none !important;
+    transform: scaleY(var(--rest, 0.3)) !important;
+  }
+  .sig-cable {
+    stroke-dashoffset: 0 !important;
+  }
+  .sig-plug {
+    opacity: 1 !important;
   }
 }
 
@@ -266,6 +703,11 @@
   background: var(--bubblegum);
   border: 2px solid var(--ink);
   border-radius: 2px;
+  transition: transform var(--motion-press) var(--ease-tactile);
+}
+
+.studio-range:active::-webkit-slider-thumb {
+  transform: scale(1.12);
 }
 
 .studio-range::-moz-range-thumb {

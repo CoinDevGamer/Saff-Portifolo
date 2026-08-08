@@ -13,7 +13,7 @@ export function About() {
   return (
     <Section id="about" background="var(--paper)">
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-8">
-        <div className="lg:col-span-7">
+        <div className="sig sig-left lg:col-span-7">
           <p className="label-strip">Liner notes</p>
           <h2 className="font-display mt-2 text-4xl leading-[0.95] font-extrabold sm:text-5xl">
             A little about me
@@ -42,26 +42,9 @@ export function About() {
               </div>
             </dl>
           </div>
-
-          {/* microphone cable connecting the notes to the credit strip */}
-          <svg
-            viewBox="0 0 400 90"
-            className="mt-1 h-20 w-full max-w-[460px]"
-            aria-hidden="true"
-            preserveAspectRatio="none"
-          >
-            <path
-              d="M24 0 C 24 45, 120 30, 200 55 S 360 80, 392 44"
-              fill="none"
-              stroke="var(--ink)"
-              strokeWidth="3"
-              strokeLinecap="round"
-            />
-            <circle cx="392" cy="44" r="6" fill="var(--bubblegum)" stroke="var(--ink)" strokeWidth="3" />
-          </svg>
         </div>
 
-        <div className="lg:col-span-5 lg:pt-16">
+        <div className="sig sig-right lg:col-span-5 lg:pt-16">
           <p className="label-strip">Credits</p>
           <h3 className="font-display mt-2 text-3xl font-extrabold">Available for</h3>
           <ul className="mt-5 grid gap-2">
@@ -90,6 +73,33 @@ export function About() {
           <p className="hand mt-3 text-2xl text-ink/80">say hi about anything else ♫</p>
         </div>
       </div>
+
+      {/* microphone cable: drawn once, connecting the notes to the credits */}
+      <svg
+        viewBox="0 0 400 90"
+        className="mt-1 h-20 w-full max-w-[460px]"
+        aria-hidden="true"
+        preserveAspectRatio="none"
+      >
+        <path
+          className="sig-cable"
+          d="M24 0 C 24 45, 120 30, 200 55 S 360 80, 392 44"
+          fill="none"
+          stroke="var(--ink)"
+          strokeWidth="3"
+          strokeLinecap="round"
+          style={{ "--dash": 620 } as React.CSSProperties}
+        />
+        <circle
+          className="sig-plug"
+          cx="392"
+          cy="44"
+          r="6"
+          fill="var(--bubblegum)"
+          stroke="var(--ink)"
+          strokeWidth="3"
+        />
+      </svg>
     </Section>
   );
 }
