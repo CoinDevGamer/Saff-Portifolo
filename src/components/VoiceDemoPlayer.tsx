@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import type { VoiceDemo } from "@/data/voiceDemos";
 import { Waveform } from "./Waveform";
 import { DownloadIcon, PauseIcon, PlayIcon, VolumeIcon } from "./icons";
@@ -8,6 +9,26 @@ function formatTime(seconds: number) {
   const m = Math.floor(seconds / 60);
   const s = Math.floor(seconds % 60);
   return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+/** Play / pause crossfade — the icons swap, the button never rotates. */
+function TransportIcon({ playing, size }: { playing: boolean; size: string }) {
+  const base: CSSProperties = {
+    position: "absolute",
+    transition: "opacity var(--motion-fast) var(--ease-signal), transform var(--motion-fast) var(--ease-signal)",
+  };
+  return (
+    <span className="relative grid place-items-center" style={{ width: size, height: size }}>
+      <PlayIcon
+        className="h-full w-full"
+        style={{ ...base, opacity: playing ? 0 : 1, transform: playing ? "scale(0.7)" : "scale(1)" }}
+      />
+      <PauseIcon
+        className="h-full w-full"
+        style={{ ...base, opacity: playing ? 1 : 0, transform: playing ? "scale(1)" : "scale(0.7)" }}
+      />
+    </span>
+  );
 }
 
 type Props = {
@@ -38,6 +59,7 @@ function VoiceDemoPlayerBase({
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(0.8);
   const [failed, setFailed] = useState(false);
+  const [pulse, setPulse] = useState(0);
 
   // Another track took over: stop this one.
   useEffect(() => {
@@ -71,7 +93,10 @@ function VoiceDemoPlayerBase({
       preload="metadata"
       onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || 0)}
       onTimeUpdate={(e) => setCurrent(e.currentTarget.currentTime)}
-      onPlay={() => setPlaying(true)}
+      onPlay={() => {
+        setPlaying(true);
+        setPulse((n) => n + 1);
+      }}
       onPause={() => setPlaying(false)}
       onEnded={() => {
         setPlaying(false);
@@ -90,13 +115,23 @@ function VoiceDemoPlayerBase({
       <div
         className="outline-ink relative bg-white p-4 sm:p-6"
         style={{
-          boxShadow: playing ? "9px 9px 0 var(--ink)" : "5px 5px 0 var(--ink)",
-          transition: "box-shadow 220ms var(--ease-studio)",
+          boxShadow: playing ? "9px 11px 0 var(--ink)" : "5px 5px 0 var(--ink)",
+          transform: playing ? "translateY(-2px)" : "translateY(0)",
+          transition:
+            "box-shadow var(--motion-ui) var(--ease-signal), transform var(--motion-ui) var(--ease-signal)",
         }}
       >
         {audioEl}
         <div className="flex flex-wrap items-start justify-between gap-3 border-b-2 border-ink pb-3">
-          <div className="min-w-0">
+          <div
+            className="min-w-0"
+            style={{
+              transform: playing ? "translateY(-1px)" : "none",
+              opacity: playing ? 1 : 0.92,
+              transition:
+                "opacity var(--motion-ui) var(--ease-signal), transform var(--motion-ui) var(--ease-signal)",
+            }}
+          >
             <p className="label-strip text-ink/60">Featured showreel</p>
             <h2 className="font-display truncate text-2xl leading-tight font-extrabold sm:text-3xl">
               {demo.title}
@@ -106,19 +141,29 @@ function VoiceDemoPlayerBase({
               {demo.isSample ? " · Sample" : ""}
             </p>
           </div>
-          <div className="outline-ink flex shrink-0 items-center gap-2 px-2.5 py-1.5" style={{ background: playing ? "var(--bubblegum)" : "var(--paper)" }}>
+          <div
+            className="outline-ink flex shrink-0 items-center gap-2 px-2.5 py-1.5"
+            style={{
+              background: playing ? "var(--bubblegum)" : "var(--paper)",
+              boxShadow: playing ? "3px 3px 0 var(--ink)" : "0 0 0 var(--ink)",
+              transition:
+                "background-color var(--motion-ui) var(--ease-switch), box-shadow var(--motion-ui) var(--ease-signal)",
+            }}
+          >
             <span
+              key={`lamp-${pulse}-${playing}`}
               className="outline-ink block h-3 w-3 rounded-full"
               style={{
                 background: playing ? "#d94f5c" : "transparent",
-                transition: "background-color 180ms var(--ease-studio)",
+                animation: playing ? "signal-on 380ms var(--ease-switch) both" : undefined,
+                transition: "background-color var(--motion-fast) var(--ease-switch)",
               }}
             />
             <span className="label-strip">{playing ? "On air" : "Off air"}</span>
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-4">
+        <div className="relative mt-4 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-4">
           <button
             type="button"
             id={playButtonId}
@@ -126,17 +171,27 @@ function VoiceDemoPlayerBase({
             aria-label={playLabel}
             aria-pressed={playing}
             disabled={failed}
-            className="studio-control grid h-16 w-16 shrink-0 place-items-center text-ink disabled:opacity-50 sm:h-20 sm:w-20"
+            className="studio-control control-transport grid h-16 w-16 shrink-0 place-items-center text-ink disabled:opacity-50 sm:h-20 sm:w-20"
             style={{ background: "var(--butter)" }}
           >
-            {playing ? <PauseIcon className="h-8 w-8" /> : <PlayIcon className="h-8 w-8" />}
+            <TransportIcon playing={playing} size="2rem" />
           </button>
+
+          {/* one signal travelling from the transport to the waveform */}
+          {playing ? (
+            <span
+              key={`sig-${pulse}`}
+              aria-hidden="true"
+              className="signal-line pointer-events-none absolute top-1/2 left-16 z-10 h-[2px] w-4 sm:left-20"
+              style={{ background: "var(--ink)" }}
+            />
+          ) : null}
 
           <div
             className="outline-ink h-16 overflow-hidden px-2 py-2 sm:h-20"
             style={{ background: "var(--sky)" }}
           >
-            <Waveform playing={playing} bars={56} seed={seed} />
+            <Waveform playing={playing} bars={56} seed={seed} expressive />
           </div>
         </div>
 
@@ -181,7 +236,7 @@ function VoiceDemoPlayerBase({
               <a
                 href={demo.audioFile}
                 download
-                className="studio-control label-strip inline-flex min-h-11 items-center gap-2 bg-mint px-3 py-2"
+                className="studio-control control-chip label-strip inline-flex min-h-11 items-center gap-2 bg-mint px-3 py-2"
               >
                 <DownloadIcon className="h-4 w-4" />
                 Download
@@ -196,13 +251,14 @@ function VoiceDemoPlayerBase({
   /* ------------------------------- TRACK ------------------------------- */
   return (
     <li
-      className="outline-ink"
+      className="outline-ink sig sig-strip"
       style={{
         background: active ? accent : "var(--white)",
         transform: active ? "translateY(-3px)" : "translateY(0)",
         boxShadow: active ? "5px 5px 0 var(--ink)" : "0 0 0 var(--ink)",
         transition:
-          "background-color 220ms var(--ease-studio), transform 220ms var(--ease-studio), box-shadow 220ms var(--ease-studio)",
+          "background-color var(--motion-ui) var(--ease-switch), transform var(--motion-ui) var(--ease-signal), box-shadow var(--motion-fast) var(--ease-signal)",
+        transitionDelay: active ? "0ms, 0ms, 180ms" : "0ms",
       }}
     >
       {audioEl}
@@ -213,9 +269,9 @@ function VoiceDemoPlayerBase({
           aria-label={playLabel}
           aria-pressed={playing}
           disabled={failed}
-          className="studio-control grid h-11 w-11 shrink-0 place-items-center bg-paper text-ink disabled:opacity-50"
+          className="studio-control control-key grid h-11 w-11 shrink-0 place-items-center bg-paper text-ink disabled:opacity-50"
         >
-          {playing ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}
+          <TransportIcon playing={playing} size="1.25rem" />
         </button>
 
         <button
@@ -225,7 +281,17 @@ function VoiceDemoPlayerBase({
           aria-expanded={active}
         >
           <span className="label-strip flex items-center gap-2 text-ink/70">
-            <span className="tabular-nums">
+            {/* the track number slides into a dark registration box when selected */}
+            <span
+              className="tabular-nums inline-block border-2 px-1"
+              style={{
+                borderColor: active ? "var(--ink)" : "transparent",
+                background: active ? "var(--ink)" : "transparent",
+                color: active ? "var(--paper)" : "inherit",
+                transition:
+                  "background-color var(--motion-ui) var(--ease-switch), color var(--motion-ui) var(--ease-switch), border-color var(--motion-ui) var(--ease-switch)",
+              }}
+            >
               {String(trackNumber ?? 1).padStart(2, "0")}
             </span>
             <span aria-hidden="true">/</span>
@@ -244,10 +310,7 @@ function VoiceDemoPlayerBase({
 
         <div className="flex shrink-0 items-center gap-2">
           {active && playing ? (
-            <span
-              className="outline-ink label-strip hidden bg-white px-2 py-1 sm:inline-block"
-              style={{ animation: "studio-enter 280ms var(--ease-studio) both" }}
-            >
+            <span className="stamp outline-ink label-strip hidden bg-white px-2 py-1 sm:inline-block">
               Now playing
             </span>
           ) : null}
@@ -259,12 +322,18 @@ function VoiceDemoPlayerBase({
         className="grid overflow-hidden px-3 sm:px-4"
         style={{
           gridTemplateRows: active ? "1fr" : "0fr",
-          transition: "grid-template-rows 280ms var(--ease-studio)",
+          transition: "grid-template-rows var(--motion-ui) var(--ease-signal)",
         }}
       >
         <div className="min-h-0">
           <div className="border-t-2 border-ink py-3">
-            <div className="outline-ink h-14 bg-white px-2 py-2">
+            <div
+              className="outline-ink h-14 overflow-hidden bg-white px-2 py-2"
+              style={{
+                clipPath: active ? "inset(0 0 0 0)" : "inset(0 100% 0 0)",
+                transition: "clip-path var(--motion-reveal) var(--ease-signal)",
+              }}
+            >
               <Waveform playing={playing} bars={40} seed={seed} />
             </div>
             <div className="mt-2 flex items-center gap-3">
@@ -287,7 +356,7 @@ function VoiceDemoPlayerBase({
                   download
                   tabIndex={active ? 0 : -1}
                   aria-label={`Download ${demo.title}`}
-                  className="studio-control grid h-11 w-11 place-items-center bg-white"
+                  className="studio-control control-chip grid h-11 w-11 place-items-center bg-white"
                 >
                   <DownloadIcon className="h-4 w-4" />
                 </a>
