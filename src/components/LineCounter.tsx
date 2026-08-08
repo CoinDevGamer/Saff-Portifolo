@@ -11,16 +11,17 @@ type Props = {
 };
 
 export function LineCounter({ id, label, hint, priceLabel, value, onChange, accent }: Props) {
-  const [bump, setBump] = useState(0);
-  const first = useRef(true);
+  const [reel, setReel] = useState<{ dir: "up" | "down"; n: number } | null>(null);
+  const prev = useRef(value);
 
   useEffect(() => {
-    if (first.current) {
-      first.current = false;
-      return;
-    }
-    setBump((n) => n + 1);
+    if (prev.current === value) return;
+    const dir = value > prev.current ? "up" : "down";
+    prev.current = value;
+    setReel((r) => ({ dir, n: (r?.n ?? 0) + 1 }));
   }, [value]);
+
+  const atZero = value === 0;
 
   return (
     <div className="outline-ink bg-white p-4" style={{ boxShadow: "5px 5px 0 var(--ink)" }}>
@@ -38,33 +39,34 @@ export function LineCounter({ id, label, hint, priceLabel, value, onChange, acce
         <button
           type="button"
           onClick={() => onChange(Math.max(0, value - 1))}
+          disabled={atZero}
           aria-label={`Remove one ${label.toLowerCase()}`}
-          className="studio-control grid h-12 place-items-center bg-paper text-2xl leading-none font-bold"
+          className="studio-control control-key grid h-12 place-items-center bg-paper text-2xl leading-none font-bold disabled:opacity-40"
         >
           <span aria-hidden="true">&minus;</span>
         </button>
-        <input
-          id={id}
-          type="number"
-          min={0}
-          inputMode="numeric"
-          value={value}
-          onChange={(e) => {
-            const next = Math.max(0, Math.floor(Number(e.target.value) || 0));
-            onChange(next);
-          }}
-          aria-label={`${label} quantity`}
-          className="outline-ink font-display h-12 w-full bg-paper text-center text-2xl font-extrabold tabular-nums"
-          style={{
-            animation: bump ? "pop-count 180ms cubic-bezier(0.22,1,0.36,1)" : undefined,
-          }}
-          key={bump}
-        />
+        <div className="outline-ink relative h-12 overflow-hidden bg-paper">
+          <input
+            id={id}
+            type="number"
+            min={0}
+            inputMode="numeric"
+            value={value}
+            onChange={(e) => {
+              const next = Math.max(0, Math.floor(Number(e.target.value) || 0));
+              onChange(next);
+            }}
+            aria-label={`${label} quantity`}
+            className="reel font-display h-full w-full bg-transparent text-center text-2xl font-extrabold tabular-nums outline-none"
+            data-dir={reel?.dir}
+            key={reel?.n ?? 0}
+          />
+        </div>
         <button
           type="button"
           onClick={() => onChange(value + 1)}
           aria-label={`Add one ${label.toLowerCase()}`}
-          className="studio-control grid h-12 place-items-center bg-paper text-2xl leading-none font-bold"
+          className="studio-control control-key grid h-12 place-items-center bg-paper text-2xl leading-none font-bold"
         >
           <span aria-hidden="true">+</span>
         </button>
