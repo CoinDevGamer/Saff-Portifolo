@@ -17,7 +17,7 @@ export function DemoLibrary() {
 
   const listRef = useRef<HTMLDivElement | null>(null);
   const chipRefs = useRef<Record<string, HTMLButtonElement | null>>({});
-  const [marker, setMarker] = useState<{ x: number; w: number } | null>(null);
+  const [marker, setMarker] = useState<{ x: number; y: number; w: number } | null>(null);
 
   const measure = useCallback(() => {
     const list = listRef.current;
@@ -25,7 +25,7 @@ export function DemoLibrary() {
     if (!list || !el) return;
     const a = el.getBoundingClientRect();
     const b = list.getBoundingClientRect();
-    setMarker({ x: a.left - b.left + list.scrollLeft, w: a.width });
+    setMarker({ x: a.left - b.left + list.scrollLeft, y: a.top - b.top, w: a.width });
   }, [filter]);
 
   useLayoutEffect(() => {
@@ -93,7 +93,7 @@ export function DemoLibrary() {
               style={{
                 background: "var(--ink)",
                 width: marker ? `${marker.w}px` : 0,
-                transform: `translateX(${marker?.x ?? 0}px)`,
+                transform: `translate(${marker?.x ?? 0}px, ${marker?.y ?? 0}px)`,
                 opacity: marker ? 1 : 0,
               }}
             />
