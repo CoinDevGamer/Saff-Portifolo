@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { categories, voiceDemos } from "@/data/voiceDemos";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { Section } from "./Section";
@@ -28,11 +28,8 @@ export function DemoLibrary() {
     setMarker({ x: a.left - b.left + list.scrollLeft, y: a.top - b.top, w: a.width });
   }, [filter]);
 
-  useLayoutEffect(() => {
-    measure();
-  }, [measure]);
-
   useEffect(() => {
+    measure();
     window.addEventListener("resize", measure);
     const t = window.setTimeout(measure, 400);
     return () => {

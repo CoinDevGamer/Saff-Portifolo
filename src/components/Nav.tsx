@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const links = [
   { href: "#demos", label: "Demos" },
@@ -22,11 +22,8 @@ export function Nav() {
     setMarker({ x: a.left - b.left + 8, w: a.width - 16 });
   }, [active]);
 
-  useLayoutEffect(() => {
-    measure();
-  }, [measure]);
-
   useEffect(() => {
+    measure();
     window.addEventListener("resize", measure);
     // fonts landing can change label widths
     const t = window.setTimeout(measure, 400);
