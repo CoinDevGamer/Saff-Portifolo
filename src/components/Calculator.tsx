@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import {
   calculateQuote,
   formatAmount,
@@ -283,5 +283,3 @@ export function Calculator() {
     </Section>
   );
 }
-
-export type { CSSProperties };
