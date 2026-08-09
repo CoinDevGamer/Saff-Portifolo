@@ -3,15 +3,73 @@ import { useCallback, useEffect, useRef, useState } from "react";
 const links = [
   { href: "#demos", label: "Demos" },
   { href: "#about", label: "About" },
+  { href: "#terms", label: "Terms" },
   { href: "#pricing", label: "Pricing" },
 ];
 
 export function Nav() {
   const [open, setOpen] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const [active, setActive] = useState("#demos");
+  const audioContextRef = useRef<AudioContext | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
   const itemRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
   const [marker, setMarker] = useState<{ x: number; w: number } | null>(null);
+
+  const playTone = useCallback(
+    (frequency: number, duration: number, volume: number, delay = 0) => {
+      if (!soundEnabled) return;
+      const AudioContextClass = window.AudioContext;
+      const context = audioContextRef.current ?? new AudioContextClass();
+      audioContextRef.current = context;
+      if (context.state === "suspended") void context.resume();
+
+      const start = context.currentTime + delay;
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(frequency, start);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(volume, start + 0.008);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+      oscillator.connect(gain);
+      gain.connect(context.destination);
+      oscillator.start(start);
+      oscillator.stop(start + duration + 0.01);
+    },
+    [soundEnabled],
+  );
+
+  useEffect(() => {
+    const interactiveSelector = "a, button, [role='button']";
+    const onHover = (event: PointerEvent) => {
+      if (event.pointerType === "touch") return;
+      if (!audioContextRef.current || audioContextRef.current.state !== "running") return;
+      const target = (event.target as Element | null)?.closest(interactiveSelector);
+      if (!target || target.contains(event.relatedTarget as Node | null)) return;
+      playTone(620, 0.045, 0.018);
+    };
+    const onClick = (event: MouseEvent) => {
+      const target = (event.target as Element | null)?.closest(interactiveSelector);
+      if (!target) return;
+      playTone(310, 0.065, 0.028);
+      playTone(465, 0.08, 0.022, 0.035);
+    };
+
+    document.addEventListener("pointerover", onHover, true);
+    document.addEventListener("click", onClick, true);
+    return () => {
+      document.removeEventListener("pointerover", onHover, true);
+      document.removeEventListener("click", onClick, true);
+    };
+  }, [playTone]);
+
+  useEffect(
+    () => () => {
+      void audioContextRef.current?.close();
+    },
+    [],
+  );
 
   const measure = useCallback(() => {
     const list = listRef.current;
@@ -34,7 +92,7 @@ export function Nav() {
   }, [measure]);
 
   useEffect(() => {
-    const ids = ["demos", "about", "pricing", "quote"];
+    const ids = ["demos", "about", "terms", "pricing", "quote"];
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -54,7 +112,10 @@ export function Nav() {
   }, []);
 
   return (
-    <header className="seq-nav sticky top-0 z-50 border-b-2 border-ink bg-paper" style={{ "--d": "40ms" } as React.CSSProperties}>
+    <header
+      className="seq-nav sticky top-0 z-50 border-b-2 border-ink bg-paper"
+      style={{ "--d": "40ms" } as React.CSSProperties}
+    >
       <nav
         aria-label="Main"
         className="mx-auto grid max-w-[1280px] grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-4 py-2.5 sm:px-6"
@@ -101,11 +162,21 @@ export function Nav() {
                 itemRefs.current[link.href] = el;
               }}
               aria-current={active === link.href ? "true" : undefined}
-              className="label-strip relative inline-flex min-h-11 items-center px-3"
+              className="nav-link label-strip relative inline-flex min-h-11 items-center px-3"
             >
               {link.label}
             </a>
           ))}
+          <button
+            type="button"
+            onClick={() => setSoundEnabled((enabled) => !enabled)}
+            aria-pressed={soundEnabled}
+            className="sfx-toggle label-strip ml-1 inline-flex min-h-11 items-center gap-1.5 px-2"
+            title="Toggle interface sounds"
+          >
+            <span className="sfx-lamp" data-on={soundEnabled ? "true" : "false"} />
+            SFX {soundEnabled ? "On" : "Off"}
+          </button>
           <a
             href="#quote"
             className="studio-control control-chip label-strip ml-2 inline-flex min-h-11 items-center px-4"
@@ -127,7 +198,7 @@ export function Nav() {
       </nav>
 
       {open ? (
-        <div id="mobile-menu" className="border-t-2 border-ink bg-white md:hidden">
+        <div id="mobile-menu" className="mobile-menu border-t-2 border-ink bg-white md:hidden">
           <ul className="mx-auto max-w-[1280px] px-4 py-2">
             {[...links, { href: "#quote", label: "Build a quote" }].map((link) => (
               <li key={link.href} className="border-b-2 border-ink/10 last:border-0">
@@ -140,6 +211,17 @@ export function Nav() {
                 </a>
               </li>
             ))}
+            <li className="border-b-2 border-ink/10 last:border-0">
+              <button
+                type="button"
+                onClick={() => setSoundEnabled((enabled) => !enabled)}
+                aria-pressed={soundEnabled}
+                className="label-strip flex min-h-12 w-full items-center justify-between"
+              >
+                Interface sounds
+                <span>{soundEnabled ? "On" : "Off"}</span>
+              </button>
+            </li>
           </ul>
         </div>
       ) : null}

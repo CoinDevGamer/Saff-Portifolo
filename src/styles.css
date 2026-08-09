@@ -100,13 +100,13 @@
   html {
     scroll-behavior: smooth;
     scroll-padding-top: 5rem;
+    overflow-x: clip;
   }
 
   body {
     background-color: var(--paper);
     color: var(--ink);
     font-family: var(--font-sans);
-    overflow-x: hidden;
   }
 
   :focus-visible {
@@ -357,6 +357,131 @@
     transform 260ms var(--ease-signal),
     width 260ms var(--ease-signal),
     opacity var(--motion-fast) var(--ease-signal);
+}
+
+.nav-link {
+  transition:
+    transform var(--motion-fast) var(--ease-signal),
+    color var(--motion-fast) var(--ease-signal);
+}
+
+.nav-link:hover {
+  transform: translateY(-2px);
+  color: color-mix(in srgb, var(--ink) 72%, var(--periwinkle));
+}
+
+.sfx-toggle {
+  border: 2px solid transparent;
+  transition:
+    transform var(--motion-fast) var(--ease-tactile),
+    border-color var(--motion-fast) var(--ease-signal),
+    background-color var(--motion-fast) var(--ease-signal);
+}
+
+.sfx-toggle:hover {
+  transform: translateY(-1px);
+  border-color: var(--ink);
+  background: var(--white);
+}
+
+.sfx-lamp {
+  width: 0.55rem;
+  height: 0.55rem;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: transparent;
+  transition:
+    background-color var(--motion-fast) var(--ease-switch),
+    transform var(--motion-fast) var(--ease-tactile),
+    box-shadow var(--motion-fast) var(--ease-signal);
+}
+
+.sfx-lamp[data-on="true"] {
+  background: var(--mint);
+  transform: scale(1.08);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--mint) 35%, transparent);
+}
+
+@keyframes mobile-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.mobile-menu {
+  transform-origin: top;
+  animation: mobile-menu-in 280ms var(--ease-signal) both;
+}
+
+/* ---------- Shared editorial card motion ---------- */
+
+.motion-card {
+  transition:
+    transform var(--motion-ui) var(--ease-tactile),
+    box-shadow var(--motion-ui) var(--ease-signal),
+    filter var(--motion-fast) var(--ease-signal);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .motion-card:hover {
+    transform: translateY(-4px) rotate(-0.15deg);
+    box-shadow: 8px 9px 0 var(--ink);
+    filter: saturate(1.04);
+  }
+
+  .motion-row:hover {
+    transform: translateX(5px);
+    box-shadow: -4px 0 0 var(--ink);
+  }
+}
+
+.motion-row {
+  transition:
+    transform var(--motion-ui) var(--ease-tactile),
+    box-shadow var(--motion-fast) var(--ease-signal),
+    filter var(--motion-fast) var(--ease-signal);
+}
+
+.terms-card {
+  opacity: 0;
+  transform: translateY(14px) scale(0.985);
+  transition:
+    opacity var(--motion-reveal) var(--ease-signal) var(--card-delay, 0ms),
+    transform var(--motion-reveal) var(--ease-signal) var(--card-delay, 0ms),
+    box-shadow var(--motion-ui) var(--ease-signal);
+}
+
+[data-shown="true"] .terms-card {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+@keyframes copy-status-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(5px) scale(0.85);
+  }
+  65% {
+    opacity: 1;
+    transform: translateY(-1px) scale(1.06);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.copy-status {
+  border-left: 2px solid var(--ink);
+  padding-left: 0.5rem;
+  animation: copy-status-pop 240ms var(--ease-tactile) both;
 }
 
 /* ============================================================
@@ -612,23 +737,6 @@
   transition-delay: 120ms;
 }
 
-/* microphone cable draws once */
-.sig-cable {
-  stroke-dasharray: var(--dash, 600);
-  stroke-dashoffset: var(--dash, 600);
-  transition: stroke-dashoffset var(--motion-feature) var(--ease-signal) 120ms;
-}
-[data-shown="true"] .sig-cable {
-  stroke-dashoffset: 0;
-}
-.sig-plug {
-  opacity: 0;
-  transition: opacity var(--motion-fast) var(--ease-signal) var(--motion-feature);
-}
-[data-shown="true"] .sig-plug {
-  opacity: 1;
-}
-
 /* ---------- Reduced motion: states apply instantly ---------- */
 
 @media (prefers-reduced-motion: reduce) {
@@ -653,6 +761,10 @@
     opacity: 1 !important;
     transform: none !important;
   }
+  .terms-card {
+    opacity: 1 !important;
+    transform: none !important;
+  }
   .wordmark:hover .wm-letter,
   .wordmark:hover .wm-wave {
     transform: translateY(var(--ty, 0em));
@@ -665,15 +777,90 @@
     animation: none !important;
     transform: scaleY(var(--rest, 0.3)) !important;
   }
-  .sig-cable {
-    stroke-dashoffset: 0 !important;
-  }
-  .sig-plug {
-    opacity: 1 !important;
-  }
 }
 
 /* ---------- Range controls (seek + volume) ---------- */
+
+@keyframes caption-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) rotate(-0.4deg) scale(0.96);
+  }
+  65% {
+    opacity: 1;
+    transform: translateY(-2px) rotate(0.15deg) scale(1.012);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(0) scale(1);
+  }
+}
+
+.caption-panel {
+  box-shadow: 5px 5px 0 var(--ink);
+  animation: caption-panel-in 360ms var(--ease-signal) both;
+}
+
+@keyframes caption-word-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) rotate(var(--word-tilt, 0deg)) scale(0.82);
+    filter: blur(5px);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-2px) rotate(0) scale(1.06);
+    filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.caption-word {
+  opacity: 0;
+  animation: caption-word-in 380ms var(--ease-switch) var(--word-delay, 0ms) forwards;
+}
+
+@keyframes caption-wipe-in {
+  0% {
+    transform: translateX(-105%) skewX(-12deg);
+  }
+  52% {
+    transform: translateX(0) skewX(-12deg);
+  }
+  100% {
+    transform: translateX(105%) skewX(-12deg);
+  }
+}
+
+.caption-wipe {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--bubblegum);
+  opacity: 0.55;
+  transform: translateX(-105%);
+  animation: caption-wipe-in 520ms var(--ease-signal) both;
+}
+
+@keyframes caption-live-pulse {
+  50% {
+    transform: scale(1.35);
+    box-shadow: 0 0 0 4px rgb(217 79 92 / 18%);
+  }
+}
+
+.caption-live-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: #d94f5c;
+  animation: caption-live-pulse 900ms ease-in-out infinite;
+}
 
 .studio-range {
   -webkit-appearance: none;
@@ -684,13 +871,21 @@
 
 .studio-range::-webkit-slider-runnable-track {
   height: 10px;
-  background: var(--white);
+  background: linear-gradient(
+    to right,
+    var(--bubblegum) 0 var(--range-progress, 0%),
+    var(--white) var(--range-progress, 0%) 100%
+  );
   border: 2px solid var(--ink);
 }
 
 .studio-range::-moz-range-track {
   height: 10px;
-  background: var(--white);
+  background: linear-gradient(
+    to right,
+    var(--bubblegum) 0 var(--range-progress, 0%),
+    var(--white) var(--range-progress, 0%) 100%
+  );
   border: 2px solid var(--ink);
 }
 

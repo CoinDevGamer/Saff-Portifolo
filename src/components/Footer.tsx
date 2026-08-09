@@ -17,6 +17,17 @@ export function Footer() {
           <a href="#about" className="label-strip min-h-11 self-center">
             About
           </a>
+          <a href="#terms" className="label-strip min-h-11 self-center">
+            Terms
+          </a>
+          <a
+            href="https://www.youtube.com/channel/UC6dTdLwmJ93AfGJSr1b6Arw"
+            target="_blank"
+            rel="noreferrer"
+            className="label-strip min-h-11 self-center"
+          >
+            YouTube
+          </a>
           <a href="#quote" className="label-strip min-h-11 self-center">
             Build a quote
           </a>

@@ -3,6 +3,7 @@ import { Nav } from "@/components/Nav";
 import { Hero } from "@/components/Hero";
 import { DemoLibrary } from "@/components/DemoLibrary";
 import { About } from "@/components/About";
+import { Terms } from "@/components/Terms";
 import { Calculator } from "@/components/Calculator";
 import { Footer } from "@/components/Footer";
 
@@ -18,10 +19,10 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: title },
       { property: "og:description", content: description },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "/" },
+      { property: "og:url", content: import.meta.env.BASE_URL },
       { name: "twitter:card", content: "summary_large_image" },
     ],
-    links: [{ rel: "canonical", href: "/" }],
+    links: [{ rel: "canonical", href: import.meta.env.BASE_URL }],
     scripts: [
       {
         type: "application/ld+json",
@@ -31,6 +32,7 @@ export const Route = createFileRoute("/")({
           name: "Saff",
           jobTitle: "Voice actor",
           description,
+          sameAs: ["https://www.youtube.com/channel/UC6dTdLwmJ93AfGJSr1b6Arw"],
         }),
       },
     ],
@@ -46,6 +48,7 @@ function Index() {
         <Hero />
         <DemoLibrary />
         <About />
+        <Terms />
         <Calculator />
       </main>
       <Footer />

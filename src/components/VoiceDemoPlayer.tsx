@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import type { CSSProperties } from "react";
-import type { VoiceDemo } from "@/data/voiceDemos";
+import type { CSSProperties, SyntheticEvent } from "react";
+import type { VoiceDemo, VoiceDemoSubtitle } from "@/data/voiceDemos";
+import { getMediaDuration } from "@/data/mediaDurations";
 import { Waveform } from "./Waveform";
 import { DownloadIcon, PauseIcon, PlayIcon, VolumeIcon } from "./icons";
 
@@ -11,23 +12,92 @@ function formatTime(seconds: number) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+function rangeProgress(value: number, max: number): CSSProperties {
+  const percent = max > 0 ? Math.min(100, Math.max(0, (value / max) * 100)) : 0;
+  return { "--range-progress": `${percent}%` } as CSSProperties;
+}
+
 /** Play / pause crossfade — the icons swap, the button never rotates. */
 function TransportIcon({ playing, size }: { playing: boolean; size: string }) {
   const base: CSSProperties = {
     position: "absolute",
-    transition: "opacity var(--motion-fast) var(--ease-signal), transform var(--motion-fast) var(--ease-signal)",
+    transition:
+      "opacity var(--motion-fast) var(--ease-signal), transform var(--motion-fast) var(--ease-signal)",
   };
   return (
     <span className="relative grid place-items-center" style={{ width: size, height: size }}>
       <PlayIcon
         className="h-full w-full"
-        style={{ ...base, opacity: playing ? 0 : 1, transform: playing ? "scale(0.7)" : "scale(1)" }}
+        style={{
+          ...base,
+          opacity: playing ? 0 : 1,
+          transform: playing ? "scale(0.7)" : "scale(1)",
+        }}
       />
       <PauseIcon
         className="h-full w-full"
-        style={{ ...base, opacity: playing ? 1 : 0, transform: playing ? "scale(1)" : "scale(0.7)" }}
+        style={{
+          ...base,
+          opacity: playing ? 1 : 0,
+          transform: playing ? "scale(1)" : "scale(0.7)",
+        }}
       />
     </span>
+  );
+}
+
+function SubtitlePanel({
+  subtitle,
+  current,
+  background,
+  className = "",
+}: {
+  subtitle?: VoiceDemoSubtitle;
+  current: number;
+  background: string;
+  className?: string;
+}) {
+  const cueLength = subtitle ? Math.max(0.01, subtitle.end - subtitle.start) : 1;
+  const cueProgress = subtitle
+    ? Math.min(100, Math.max(0, ((current - subtitle.start) / cueLength) * 100))
+    : 0;
+  const words = (subtitle?.text ?? "Play audio").split(/\s+/);
+
+  return (
+    <div
+      className={`caption-panel outline-ink relative overflow-hidden px-4 py-4 text-center ${className}`}
+      aria-live="polite"
+      style={{ background }}
+    >
+      <span className="caption-wipe" aria-hidden="true" />
+      <span className="label-strip mb-2 flex items-center justify-center gap-2 text-ink/60">
+        <span className="caption-live-dot" aria-hidden="true" />
+        {subtitle ? "Now speaking" : "Ready"}
+      </span>
+      <span className="font-display relative z-10 block text-lg leading-snug font-bold sm:text-xl">
+        {words.map((word, index) => (
+          <span
+            key={`${word}-${index}`}
+            className="caption-word inline-block"
+            style={
+              {
+                "--word-delay": `${Math.min(index * 55, 440)}ms`,
+                "--word-tilt": `${index % 2 === 0 ? -1.5 : 1.5}deg`,
+              } as CSSProperties
+            }
+          >
+            {word}
+            {index < words.length - 1 ? "\u00a0" : ""}
+          </span>
+        ))}
+      </span>
+      <span className="absolute right-0 bottom-0 left-0 h-1.5 bg-white" aria-hidden="true">
+        <span
+          className="block h-full bg-bubblegum"
+          style={{ width: `${cueProgress}%`, transition: "width 70ms linear" }}
+        />
+      </span>
+    </div>
   );
 }
 
@@ -53,61 +123,120 @@ function VoiceDemoPlayerBase({
   seed = 1,
   playButtonId,
 }: Props) {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const mediaRef = useRef<HTMLMediaElement | null>(null);
+  const isVideo = /\.mp4(?:$|[?#])/i.test(demo.audioFile);
+  const fallbackDuration = getMediaDuration(demo.audioFile);
+  const mediaSource = `${import.meta.env.BASE_URL}${demo.audioFile.replace(/^\/+/, "")}`;
   const [playing, setPlaying] = useState(false);
   const [current, setCurrent] = useState(0);
-  const [duration, setDuration] = useState(0);
+  const [duration, setDuration] = useState(fallbackDuration);
   const [volume, setVolume] = useState(0.8);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const [captionsEnabled, setCaptionsEnabled] = useState(true);
   const [failed, setFailed] = useState(false);
   const [pulse, setPulse] = useState(0);
 
   // Another track took over: stop this one.
   useEffect(() => {
     if (variant === "track" && !active && playing) {
-      audioRef.current?.pause();
+      mediaRef.current?.pause();
     }
   }, [active, playing, variant]);
 
+  useEffect(() => {
+    if (!Number.isFinite(duration) || duration <= 0) setDuration(fallbackDuration);
+  }, [duration, fallbackDuration]);
+
+  useEffect(() => {
+    if (!playing) return;
+    let frame = 0;
+    const updatePlayhead = () => {
+      if (mediaRef.current) setCurrent(mediaRef.current.currentTime);
+      frame = requestAnimationFrame(updatePlayhead);
+    };
+    frame = requestAnimationFrame(updatePlayhead);
+    return () => cancelAnimationFrame(frame);
+  }, [playing]);
+
   const toggle = useCallback(() => {
-    const audio = audioRef.current;
-    if (!audio || failed) return;
-    if (audio.paused) {
+    const media = mediaRef.current;
+    if (!media || failed) return;
+    if (media.paused) {
+      if (media.ended || (media.duration > 0 && media.currentTime >= media.duration)) {
+        media.currentTime = 0;
+        setCurrent(0);
+      }
       onActivate?.(demo.id);
-      void audio.play().catch(() => setFailed(true));
+      void media.play().catch(() => setFailed(true));
     } else {
-      audio.pause();
+      media.pause();
     }
   }, [demo.id, failed, onActivate]);
 
   const seek = useCallback((value: number) => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    audio.currentTime = value;
+    const media = mediaRef.current;
+    if (!media) return;
+    media.currentTime = value;
     setCurrent(value);
   }, []);
 
-  const audioEl = (
+  const changePlaybackRate = useCallback((rate: number) => {
+    setPlaybackRate(rate);
+    if (mediaRef.current) mediaRef.current.playbackRate = rate;
+  }, []);
+
+  const syncDuration = useCallback((media: HTMLMediaElement) => {
+    if (Number.isFinite(media.duration) && media.duration > 0) setDuration(media.duration);
+  }, []);
+
+  const mediaEvents = {
+    src: mediaSource,
+    preload: "metadata" as const,
+    onLoadedMetadata: (e: SyntheticEvent<HTMLMediaElement>) => syncDuration(e.currentTarget),
+    onDurationChange: (e: SyntheticEvent<HTMLMediaElement>) => syncDuration(e.currentTarget),
+    onCanPlay: (e: SyntheticEvent<HTMLMediaElement>) => syncDuration(e.currentTarget),
+    onTimeUpdate: (e: SyntheticEvent<HTMLMediaElement>) => setCurrent(e.currentTarget.currentTime),
+    onPlay: () => {
+      setPlaying(true);
+      setPulse((n) => n + 1);
+    },
+    onPause: () => setPlaying(false),
+    onEnded: () => {
+      setPlaying(false);
+      setCurrent(duration || fallbackDuration);
+    },
+    onError: () => setFailed(true),
+    onVolumeChange: (e: SyntheticEvent<HTMLMediaElement>) => setVolume(e.currentTarget.volume),
+  };
+
+  const audioEl = !isVideo ? (
     <audio
-      ref={audioRef}
-      src={demo.audioFile}
-      preload="metadata"
-      onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || 0)}
-      onTimeUpdate={(e) => setCurrent(e.currentTarget.currentTime)}
-      onPlay={() => {
-        setPlaying(true);
-        setPulse((n) => n + 1);
+      ref={(node) => {
+        mediaRef.current = node;
       }}
-      onPause={() => setPlaying(false)}
-      onEnded={() => {
-        setPlaying(false);
-        setCurrent(0);
-      }}
-      onError={() => setFailed(true)}
-      onVolumeChange={(e) => setVolume(e.currentTarget.volume)}
+      {...mediaEvents}
     />
-  );
+  ) : null;
+
+  const videoEl = isVideo ? (
+    <video
+      ref={(node) => {
+        mediaRef.current = node;
+      }}
+      {...mediaEvents}
+      playsInline
+      className="aspect-video h-auto w-full bg-ink object-contain"
+      aria-label={`${demo.title} video`}
+    />
+  ) : null;
 
   const playLabel = `${playing ? "Pause" : "Play"} ${demo.title}`;
+  const subtitles = demo.subtitles ?? [];
+  const activeSubtitle = subtitles.find(
+    (subtitle) => current >= subtitle.start && current < subtitle.end,
+  );
+  const visibleSubtitle = playing || current > 0 ? activeSubtitle : undefined;
+  const cardColor = active ? accent : "var(--white)";
 
   /* ------------------------------ CONSOLE ------------------------------ */
   if (variant === "console") {
@@ -195,6 +324,16 @@ function VoiceDemoPlayerBase({
           </div>
         </div>
 
+        {captionsEnabled ? (
+          <SubtitlePanel
+            key={`${demo.id}-${visibleSubtitle?.start ?? "ready"}`}
+            subtitle={visibleSubtitle}
+            current={current}
+            background="var(--white)"
+            className="mt-4 text-ink"
+          />
+        ) : null}
+
         <div className="mt-4 flex items-center gap-3">
           <span className="label-strip tabular-nums">{formatTime(current)}</span>
           <input
@@ -206,6 +345,7 @@ function VoiceDemoPlayerBase({
             onChange={(e) => seek(Number(e.target.value))}
             aria-label={`Seek within ${demo.title}`}
             className="studio-range h-11 flex-1"
+            style={rangeProgress(current, duration)}
           />
           <span className="label-strip tabular-nums">{formatTime(duration)}</span>
         </div>
@@ -222,19 +362,50 @@ function VoiceDemoPlayerBase({
               onChange={(e) => {
                 const v = Number(e.target.value);
                 setVolume(v);
-                if (audioRef.current) audioRef.current.volume = v;
+                if (mediaRef.current) mediaRef.current.volume = v;
               }}
               aria-label="Volume"
               className="studio-range h-11 w-28"
+              style={rangeProgress(volume, 1)}
             />
+            <div className="flex items-center gap-1" aria-label="Playback speed">
+              {[0.5, 1, 2].map((rate) => (
+                <button
+                  key={rate}
+                  type="button"
+                  onClick={() => changePlaybackRate(rate)}
+                  aria-pressed={playbackRate === rate}
+                  className="control-chip label-strip h-9 min-w-10 border-2 border-ink px-2"
+                  style={{
+                    background: playbackRate === rate ? "var(--ink)" : "var(--white)",
+                    color: playbackRate === rate ? "var(--paper)" : "var(--ink)",
+                  }}
+                >
+                  {rate}x
+                </button>
+              ))}
+            </div>
           </div>
           <div className="flex items-center gap-3">
             {failed ? (
               <span className="label-strip text-ink/70">Showreel unavailable right now</span>
             ) : null}
+            <button
+              type="button"
+              onClick={() => setCaptionsEnabled((enabled) => !enabled)}
+              disabled={subtitles.length === 0}
+              aria-pressed={captionsEnabled}
+              className="control-chip label-strip h-11 border-2 border-ink px-3 disabled:cursor-not-allowed disabled:opacity-45"
+              style={{
+                background: "var(--white)",
+                color: "var(--ink)",
+              }}
+            >
+              CC {subtitles.length > 0 ? "Subtitles" : "Unavailable"}
+            </button>
             {demo.downloadable ? (
               <a
-                href={demo.audioFile}
+                href={mediaSource}
                 download
                 className="studio-control control-chip label-strip inline-flex min-h-11 items-center gap-2 bg-mint px-3 py-2"
               >
@@ -309,11 +480,13 @@ function VoiceDemoPlayerBase({
         </button>
 
         <div className="flex shrink-0 items-center gap-2">
-          {active && playing ? (
-            <span className="stamp outline-ink label-strip hidden bg-white px-2 py-1 sm:inline-block">
-              Now playing
-            </span>
-          ) : null}
+          <span className="outline-ink label-strip hidden items-center gap-1.5 bg-white px-2 py-1 sm:inline-flex">
+            <span
+              className="block h-2.5 w-2.5 rounded-full border-2 border-ink"
+              style={{ background: playing ? "#d94f5c" : "transparent" }}
+            />
+            {playing ? "On air" : "Off air"}
+          </span>
           <span className="label-strip tabular-nums">{formatTime(duration)}</span>
         </div>
       </div>
@@ -321,22 +494,32 @@ function VoiceDemoPlayerBase({
       <div
         className="grid overflow-hidden px-3 sm:px-4"
         style={{
-          gridTemplateRows: active ? "1fr" : "0fr",
+          gridTemplateRows: "1fr",
           transition: "grid-template-rows var(--motion-ui) var(--ease-signal)",
         }}
       >
         <div className="min-h-0">
           <div className="border-t-2 border-ink py-3">
-            <div
-              className="outline-ink h-14 overflow-hidden bg-white px-2 py-2"
-              style={{
-                clipPath: active ? "inset(0 0 0 0)" : "inset(0 100% 0 0)",
-                transition: "clip-path var(--motion-reveal) var(--ease-signal)",
-              }}
-            >
-              <Waveform playing={playing} bars={40} seed={seed} />
-            </div>
-            <div className="mt-2 flex items-center gap-3">
+            {isVideo ? (
+              <div className="outline-ink mx-auto max-w-3xl overflow-hidden bg-ink">{videoEl}</div>
+            ) : (
+              <div
+                className="outline-ink h-20 overflow-hidden px-2 py-2 sm:h-24"
+                style={{ background: "var(--sky)" }}
+              >
+                <Waveform playing={playing} bars={56} seed={seed} expressive />
+              </div>
+            )}
+            {captionsEnabled ? (
+              <SubtitlePanel
+                key={`${demo.id}-${visibleSubtitle?.start ?? "ready"}`}
+                subtitle={visibleSubtitle}
+                current={current}
+                background={cardColor}
+                className="mt-3 text-ink"
+              />
+            ) : null}
+            <div className="mt-2 flex flex-wrap items-center gap-3">
               <span className="label-strip tabular-nums">{formatTime(current)}</span>
               <input
                 type="range"
@@ -346,21 +529,74 @@ function VoiceDemoPlayerBase({
                 value={Math.min(current, duration || 0)}
                 onChange={(e) => seek(Number(e.target.value))}
                 aria-label={`Seek within ${demo.title}`}
-                tabIndex={active ? 0 : -1}
-                className="studio-range h-11 flex-1"
+                className="studio-range h-11 min-w-36 flex-1"
+                style={rangeProgress(current, duration)}
               />
               <span className="label-strip tabular-nums">{formatTime(duration)}</span>
-              {demo.downloadable ? (
-                <a
-                  href={demo.audioFile}
-                  download
-                  tabIndex={active ? 0 : -1}
-                  aria-label={`Download ${demo.title}`}
-                  className="studio-control control-chip grid h-11 w-11 place-items-center bg-white"
-                >
-                  <DownloadIcon className="h-4 w-4" />
-                </a>
-              ) : null}
+            </div>
+            <div className="flex flex-wrap items-center gap-3 border-t-2 border-ink py-3">
+              <div className="flex items-center gap-2">
+                <VolumeIcon className="h-5 w-5" />
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={volume}
+                  onChange={(e) => {
+                    const nextVolume = Number(e.target.value);
+                    setVolume(nextVolume);
+                    if (mediaRef.current) mediaRef.current.volume = nextVolume;
+                  }}
+                  aria-label={`Volume for ${demo.title}`}
+                  className="studio-range h-11 w-32"
+                  style={rangeProgress(volume, 1)}
+                />
+              </div>
+              <div className="flex items-center gap-1" aria-label="Playback speed">
+                {[0.5, 1, 2].map((rate) => (
+                  <button
+                    key={rate}
+                    type="button"
+                    onClick={() => changePlaybackRate(rate)}
+                    aria-pressed={playbackRate === rate}
+                    className="control-chip label-strip h-9 min-w-10 border-2 border-ink px-2"
+                    style={{
+                      background: playbackRate === rate ? "var(--ink)" : "var(--white)",
+                      color: playbackRate === rate ? "var(--paper)" : "var(--ink)",
+                    }}
+                  >
+                    {rate}x
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => setCaptionsEnabled((enabled) => !enabled)}
+                disabled={subtitles.length === 0}
+                aria-pressed={captionsEnabled}
+                className="control-chip label-strip h-11 border-2 border-ink px-3 disabled:cursor-not-allowed disabled:opacity-45"
+                style={{
+                  background: cardColor,
+                  color: "var(--ink)",
+                }}
+              >
+                CC {subtitles.length > 0 ? "Subtitles" : "Unavailable"}
+              </button>
+              <div className="ml-auto flex items-center gap-3">
+                <span className="label-strip sm:hidden">{playing ? "On air" : "Off air"}</span>
+                {demo.downloadable ? (
+                  <a
+                    href={mediaSource}
+                    download
+                    aria-label={`Download ${demo.title}`}
+                    className="studio-control control-chip label-strip inline-flex h-11 items-center gap-2 bg-white px-4"
+                  >
+                    <DownloadIcon className="h-4 w-4" />
+                    Download
+                  </a>
+                ) : null}
+              </div>
             </div>
             {failed ? (
               <p className="label-strip mt-2">This recording is unavailable right now</p>

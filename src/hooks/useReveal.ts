@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-/** Reveals an element once, when ~20% of it is visible. */
+/** Reveals an element once its leading edge enters the viewport. */
 export function useReveal<T extends HTMLElement = HTMLElement>() {
   const ref = useRef<T | null>(null);
   const [shown, setShown] = useState(false);
@@ -21,7 +21,9 @@ export function useReveal<T extends HTMLElement = HTMLElement>() {
           }
         }
       },
-      { threshold: 0.2 },
+      // Large sections can be taller than several viewports, so requiring a
+      // large visible percentage can make them impossible to reveal.
+      { threshold: 0.01 },
     );
     observer.observe(node);
     return () => observer.disconnect();
