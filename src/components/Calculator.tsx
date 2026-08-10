@@ -26,7 +26,9 @@ function ReceiptValue({ children, total = false }: { children: ReactNode; total?
   return (
     <span
       key={n}
-      className={n ? (total ? "receipt-total inline-block" : "receipt-value inline-block") : "inline-block"}
+      className={
+        n ? (total ? "receipt-total inline-block" : "receipt-value inline-block") : "inline-block"
+      }
     >
       {children}
     </span>
@@ -147,19 +149,19 @@ export function Calculator() {
               <dl className="mt-4 grid gap-2 text-base">
                 <div className="flex justify-between gap-4">
                   <dt>Short lines</dt>
-                  <dd className="tabular-nums">
+                  <dd className="min-w-0 break-words text-right tabular-nums">
                     <ReceiptValue>{shortLines}</ReceiptValue>
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4">
                   <dt>Long lines</dt>
-                  <dd className="tabular-nums">
+                  <dd className="min-w-0 break-words text-right tabular-nums">
                     <ReceiptValue>{longLines}</ReceiptValue>
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4 border-t-2 border-dashed border-ink pt-2">
                   <dt>Line subtotal</dt>
-                  <dd className="tabular-nums">
+                  <dd className="min-w-0 break-words text-right tabular-nums">
                     <ReceiptValue>{formatAmount(quote.subtotal, currency)}</ReceiptValue>
                   </dd>
                 </div>
@@ -175,7 +177,7 @@ export function Calculator() {
                   <div className="min-h-0">
                     <div className="flex justify-between gap-4">
                       <dt>Minimum fee adjustment</dt>
-                      <dd className="tabular-nums">
+                      <dd className="min-w-0 break-words text-right tabular-nums">
                         <ReceiptValue>
                           {`+${formatAmount(Math.max(0, quote.estimate - quote.subtotal), currency)}`}
                         </ReceiptValue>
@@ -189,7 +191,7 @@ export function Calculator() {
                 <p className="label-strip text-ink/60">Estimated total</p>
                 <p
                   aria-live="polite"
-                  className="font-display min-h-[1.05em] text-4xl leading-none font-extrabold tabular-nums sm:text-5xl"
+                  className="font-display min-h-[1.05em] max-w-full break-words text-[clamp(2rem,8vw,3rem)] leading-none font-extrabold tabular-nums"
                 >
                   <ReceiptValue total>{formatAmount(quote.estimate, currency)}</ReceiptValue>
                 </p>

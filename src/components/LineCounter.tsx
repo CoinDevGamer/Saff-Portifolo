@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { clampLineCount, maximumLinesPerType } from "@/data/pricing";
 
 type Props = {
   id: string;
@@ -22,6 +23,7 @@ export function LineCounter({ id, label, hint, priceLabel, value, onChange, acce
   }, [value]);
 
   const atZero = value === 0;
+  const atMaximum = value >= maximumLinesPerType;
 
   return (
     <div className="outline-ink bg-white p-4" style={{ boxShadow: "5px 5px 0 var(--ink)" }}>
@@ -48,15 +50,30 @@ export function LineCounter({ id, label, hint, priceLabel, value, onChange, acce
         <div className="outline-ink relative h-12 overflow-hidden bg-paper">
           <input
             id={id}
-            type="number"
-            min={0}
+            type="text"
             inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={3}
             value={value}
             onChange={(e) => {
-              const next = Math.max(0, Math.floor(Number(e.target.value) || 0));
-              onChange(next);
+              const next = e.target.value;
+              if (next === "") {
+                onChange(0);
+                return;
+              }
+              if (!/^\d+$/.test(next)) return;
+              onChange(clampLineCount(Number(next)));
+            }}
+            onPaste={(e) => {
+              e.preventDefault();
+              const next = e.clipboardData.getData("text").trim();
+              if (!/^\d+$/.test(next)) return;
+              onChange(clampLineCount(Number(next)));
             }}
             aria-label={`${label} quantity`}
+            aria-valuemin={0}
+            aria-valuemax={maximumLinesPerType}
+            aria-valuenow={value}
             className="reel font-display h-full w-full bg-transparent text-center text-2xl font-extrabold tabular-nums outline-none"
             data-dir={reel?.dir}
             key={reel?.n ?? 0}
@@ -64,9 +81,10 @@ export function LineCounter({ id, label, hint, priceLabel, value, onChange, acce
         </div>
         <button
           type="button"
-          onClick={() => onChange(value + 1)}
+          onClick={() => onChange(clampLineCount(value + 1))}
+          disabled={atMaximum}
           aria-label={`Add one ${label.toLowerCase()}`}
-          className="studio-control control-key grid h-12 place-items-center bg-paper text-2xl leading-none font-bold"
+          className="studio-control control-key grid h-12 place-items-center bg-paper text-2xl leading-none font-bold disabled:opacity-40"
         >
           <span aria-hidden="true">+</span>
         </button>
