@@ -192,31 +192,6 @@ export const voiceDemos: VoiceDemo[] = [
     featured: false,
   },
   {
-    id: "attendant-line-01",
-    title: "Attendant Line 1",
-    category: "Video Games",
-    description: "The first attendant dialogue line.",
-    // Audio length: 1.80 seconds
-    subtitles: [{ start: 0, end: 1.8, text: "Uh, and who are you?" }],
-    audioFile: "/audio/attendant line 1`.mp3",
-    downloadable: true,
-    featured: false,
-  },
-  {
-    id: "attendant-line-02",
-    title: "Attendant Line 2",
-    category: "Video Games",
-    description: "The second attendant dialogue line.",
-    // Audio length: 6.30 seconds
-    subtitles: [
-      { start: 0, end: 3.1, text: "Oh, okay. Here are your options." },
-      { start: 3.1, end: 6.29, text: "Please pick one, make sure you choose wisely." },
-    ],
-    audioFile: "/audio/attendant line 2.mp3",
-    downloadable: true,
-    featured: false,
-  },
-  {
     id: "desk-agent-line-01",
     title: "Desk Agent Line 1",
     category: "Video Games",

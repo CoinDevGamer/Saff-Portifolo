@@ -8,8 +8,6 @@ const mediaDurations: Record<string, number> = {
   "/audio/6 onyx.mp3": 2.873469,
   "/audio/7 onyx.mp3": 2.66449,
   "/audio/Shop_Progress.mp4": 13.737333,
-  "/audio/attendant line 1`.mp3": 1.802449,
-  "/audio/attendant line 2.mp3": 6.29551,
   "/audio/desk agent line 1.mp3": 3.526531,
   "/audio/desk agent line 2.mp3": 3.422041,
   "/audio/finalscene1.mp3": 2.507755,
