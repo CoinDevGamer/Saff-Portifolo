@@ -10,6 +10,8 @@ import {
 } from "@/data/pricing";
 import { LineCounter } from "./LineCounter";
 import { Section } from "./Section";
+import { DownloadIcon } from "./icons";
+import { downloadReceiptPng } from "@/lib/downloadReceipt";
 
 /** Prints a receipt value again only when that value actually changed. */
 function ReceiptValue({ children, total = false }: { children: ReactNode; total?: boolean }) {
@@ -39,6 +41,7 @@ export function Calculator() {
   const [currency, setCurrency] = useState<Currency>("USD");
   const [shortLines, setShortLines] = useState(0);
   const [longLines, setLongLines] = useState(0);
+  const [receiptStatus, setReceiptStatus] = useState<"idle" | "saving" | "saved">("idle");
 
   const quote = calculateQuote(shortLines, longLines, currency);
   const isUSD = currency === "USD";
@@ -224,6 +227,28 @@ export function Calculator() {
                   className="studio-control control-chip label-strip mt-4 min-h-11 bg-paper px-4"
                 >
                   Reset
+                </button>
+                <button
+                  type="button"
+                  disabled={quote.totalLines === 0 || receiptStatus === "saving"}
+                  onClick={async () => {
+                    setReceiptStatus("saving");
+                    try {
+                      await downloadReceiptPng({ currency, shortLines, longLines, quote });
+                      setReceiptStatus("saved");
+                      window.setTimeout(() => setReceiptStatus("idle"), 1800);
+                    } catch {
+                      setReceiptStatus("idle");
+                    }
+                  }}
+                  className="studio-control control-chip label-strip mt-4 ml-3 inline-flex min-h-11 items-center gap-2 bg-butter px-4 disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  <DownloadIcon className="h-5 w-5" />
+                  {receiptStatus === "saving"
+                    ? "Making PNG..."
+                    : receiptStatus === "saved"
+                      ? "Receipt saved"
+                      : "Download my custom receipt"}
                 </button>
               </div>
 
