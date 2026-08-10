@@ -10,6 +10,13 @@ export const pricing = {
   minimum: { usd: 10, robux: 3000 },
 } as const;
 
+export const maximumLinesPerType = 999;
+
+export function clampLineCount(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(maximumLinesPerType, Math.max(0, Math.floor(value)));
+}
+
 export type Currency = "USD" | "Robux";
 
 export type Quote = {
@@ -19,21 +26,16 @@ export type Quote = {
   minimumApplied: boolean;
 };
 
-export function calculateQuote(
-  shortLines: number,
-  longLines: number,
-  currency: Currency,
-): Quote {
+export function calculateQuote(shortLines: number, longLines: number, currency: Currency): Quote {
+  shortLines = clampLineCount(shortLines);
+  longLines = clampLineCount(longLines);
   const totalLines = shortLines + longLines;
 
-  const usdSubtotal =
-    shortLines * pricing.shortLine.usd + longLines * pricing.longLine.usd;
+  const usdSubtotal = shortLines * pricing.shortLine.usd + longLines * pricing.longLine.usd;
   const usdEstimate = totalLines === 0 ? 0 : Math.max(pricing.minimum.usd, usdSubtotal);
 
-  const robuxSubtotal =
-    shortLines * pricing.shortLine.robux + longLines * pricing.longLine.robux;
-  const robuxEstimate =
-    totalLines === 0 ? 0 : Math.max(pricing.minimum.robux, robuxSubtotal);
+  const robuxSubtotal = shortLines * pricing.shortLine.robux + longLines * pricing.longLine.robux;
+  const robuxEstimate = totalLines === 0 ? 0 : Math.max(pricing.minimum.robux, robuxSubtotal);
 
   const subtotal = currency === "USD" ? usdSubtotal : robuxSubtotal;
   const estimate = currency === "USD" ? usdEstimate : robuxEstimate;
