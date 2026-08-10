@@ -218,38 +218,40 @@ export function Calculator() {
                   This is an estimate, not a final invoice. Pricing is negotiable depending on the
                   project.
                 </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShortLines(0);
-                    setLongLines(0);
-                  }}
-                  className="studio-control control-chip label-strip mt-4 min-h-11 bg-paper px-4"
-                >
-                  Reset
-                </button>
-                <button
-                  type="button"
-                  disabled={quote.totalLines === 0 || receiptStatus === "saving"}
-                  onClick={async () => {
-                    setReceiptStatus("saving");
-                    try {
-                      await downloadReceiptPng({ currency, shortLines, longLines, quote });
-                      setReceiptStatus("saved");
-                      window.setTimeout(() => setReceiptStatus("idle"), 1800);
-                    } catch {
-                      setReceiptStatus("idle");
-                    }
-                  }}
-                  className="studio-control control-chip label-strip mt-4 ml-3 inline-flex min-h-11 items-center gap-2 bg-butter px-4 disabled:cursor-not-allowed disabled:opacity-45"
-                >
-                  <DownloadIcon className="h-5 w-5" />
-                  {receiptStatus === "saving"
-                    ? "Making PNG..."
-                    : receiptStatus === "saved"
-                      ? "Receipt saved"
-                      : "Download my custom receipt"}
-                </button>
+                <div className="mt-4 flex flex-wrap items-stretch gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShortLines(0);
+                      setLongLines(0);
+                    }}
+                    className="studio-control control-chip label-strip inline-flex min-h-11 items-center justify-center bg-paper px-4"
+                  >
+                    Reset
+                  </button>
+                  <button
+                    type="button"
+                    disabled={quote.totalLines === 0 || receiptStatus === "saving"}
+                    onClick={async () => {
+                      setReceiptStatus("saving");
+                      try {
+                        await downloadReceiptPng({ currency, shortLines, longLines, quote });
+                        setReceiptStatus("saved");
+                        window.setTimeout(() => setReceiptStatus("idle"), 1800);
+                      } catch {
+                        setReceiptStatus("idle");
+                      }
+                    }}
+                    className="studio-control control-chip label-strip inline-flex min-h-11 items-center justify-center gap-2 bg-butter px-4 disabled:cursor-not-allowed disabled:opacity-45"
+                  >
+                    <DownloadIcon className="h-5 w-5" />
+                    {receiptStatus === "saving"
+                      ? "Making PNG..."
+                      : receiptStatus === "saved"
+                        ? "Receipt saved"
+                        : "Download my custom receipt"}
+                  </button>
+                </div>
               </div>
 
               {/* Payment details */}
